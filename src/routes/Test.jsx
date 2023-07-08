@@ -1,37 +1,57 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom';
 let selectedAnswers = [];
 
-function Test({final}) {
+function Test({ final }) {
+    // To store current questions
     const [currentGame, setCurrentGame] = useState([]);
+    // To store all answer option
     const [currentAnswer, setCurrentAnswer] = useState({});
+    // To store correct answer
     const [correctAnswer, setCorrectAnswer] = useState();
+    // To store correct question
     const [currentQuestion, setCurrentQuestion] = useState(0);
+    // To store player score
     const [currentScore, setCurrentScore] = useState(0);
+    // to store the index of the answer user selected
     const [userAnswer, setUserAnswer] = useState();
     const navigate = useNavigate();
+    const location = useLocation();
+    // to stop running currentQuestion useEffect first time
+    const effectRan = useRef(false);
 
+    // To get the data from api
     async function gameData() {
-        const response = await fetch(`https://quizapi.io/api/v1/questions?apiKey=${process.env.REACT_APP_API_TOKEN}&limit=10&category=Linux`);
-        const data = await response.json();
-        setCurrentGame(data);
-        console.log(data);
-        setCurrentAnswer(data[currentQuestion].answers);
-        setCorrectAnswer(data[currentQuestion].correct_answer);
+        try {
+            const response = await fetch(`https://quizapi.io/api/v1/questions?apiKey=${process.env.REACT_APP_API_TOKEN}&limit=10&category=${location.state.category}&tags=${location.state.tags}`);
+            const data = await response.json();
+            setCurrentGame(data);
+            console.log(data);
+            setCurrentAnswer(data[currentQuestion].answers);
+            setCorrectAnswer(data[currentQuestion].correct_answer);
+            effectRan.current = true;
+        } catch (error) {
+            navigate('/error_500');
+        }
+
     }
 
+    // To run fetch the api once and reset the user selected answer array  
     useEffect(() => {
         gameData();
         selectedAnswers = [];
+        effectRan.current = false;
     }, []);
 
+    // To store the correct answer and answers when the question is changed
     useEffect(() => {
-        if (currentQuestion > 0) {
+        if (effectRan.current === true) {
             setCurrentAnswer(currentGame[currentQuestion].answers);
-            setCorrectAnswer(currentGame[currentQuestion].correct_answer);
+            setCorrectAnswer(currentGame[currentQuestion].correct_answer);    
         }
     }, [currentQuestion]);
 
+    // To move the the question forward and if the answer is correct, increment the score
     function onNext() {
         setCurrentQuestion((prevValue) => (prevValue + 1) % 10);
         if (userAnswer === correctAnswer) {
@@ -39,6 +59,7 @@ function Test({final}) {
         }
     }
 
+    // To move the question backward and if the answer is correct, increment the score
     function onPrevious() {
         if (currentQuestion === 0) {
             setCurrentQuestion(9);
@@ -50,52 +71,54 @@ function Test({final}) {
         }
     }
 
+    // To highlight the div user has selected
     function activeDiv(index) {
         if (index === selectedAnswers[currentQuestion]) {
-            return 'border-black border p-1 container cursor-pointer my-2 flex rounded-2xl hover:bg-green-400 hover:text-white items-center bg-green-400'
+            return 'border-black border p-1 container cursor-pointer my-2 flex rounded-2xl hover:bg-green-400 hover:text-white items-center delay-50 bg-green-400'
         } else {
-            return 'border-black border p-1 container cursor-pointer my-2 flex rounded-2xl hover:bg-green-400 hover:text-white items-center'
+            return 'border-black border p-1 container cursor-pointer my-2 flex rounded-2xl hover:bg-green-400 hover:text-white items-center delay-50'
         }
     }
 
+    // To store the answer selected by the user and its index
     function updateScore(ans, index) {
         setUserAnswer(ans);
         selectedAnswers[currentQuestion] = index;
     }
 
-    function submit(){
+    // To store the current score in the final state to be passed to the submit page
+    function submit() {
         final(currentScore);
         navigate('/submit');
     }
     return (
         <>
-            <div className='flex justify-center mt-10'>
-                <h1>Linux</h1>
+            <div class='flex justify-center mt-10'>
+                <h1>{location.state.name}</h1>
             </div>
             <div>
                 {/* <h1>{props.title}</h1> */}
-                <div className='mx-32 my-10 shadow-lg p-14'>
-                    <p className='float-right ml-6'>{currentQuestion + 1}/10 questions</p>
-                    <p className='text-xl'>Q.{currentQuestion + 1} <span className='ml-3'>{currentGame[currentQuestion]?.question}</span></p>
+                <div class='mx-32 my-10 shadow-lg p-14'>
+                    <p class='float-right ml-6'>{currentQuestion + 1}/10 questions</p>
+                    <p class='text-xl'>Q.{currentQuestion + 1} <span class='ml-3'>{currentGame[currentQuestion]?.question}</span></p>
                     <div >
                         {Object.keys(currentAnswer).map((answer, index) => {
-                            if(currentAnswer[answer] !== null){
+                            if (currentAnswer[answer] !== null) {
                                 return (
-                                    <div key={index} onClick={(el) => updateScore(answer, index)} className={activeDiv(index)}>
-                                        <div className='py-2 px-4 bg-cyan-400 rounded-2xl'>
+                                    <div key={index} onClick={(el) => updateScore(answer, index)} class={activeDiv(index)}>
+                                        <div class='py-2 px-4 bg-cyan-400 rounded-2xl'>
                                             <p>{index + 1}</p>
                                         </div>
-                                        <div className='ml-6'>{currentAnswer[answer]}</div>
+                                        <div class='ml-6'>{currentAnswer[answer]}</div>
                                     </div>
                                 )
                             }
                         })}
                     </div>
-                    <div className='flex justify-center mt-10'>
-                        <button onClick={onPrevious} className='mx-4 p-3 bg-green-400 rounded-lg hover:bg-green-600'>Previous</button>
-                        <button onClick={onNext} className='mx-4 p-3 bg-green-400 rounded-lg hover:bg-green-600'>Next</button>
-                        <button onClick={submit} className='mx-4 p-3 bg-green-400 rounded-lg hover:bg-green-600'>Submit</button>
-                        <p>{currentScore}</p>
+                    <div class='flex justify-center mt-10'>
+                        <button onClick={onPrevious} class='mx-4 p-3 bg-green-400 rounded-lg border hover:bg-white hover:border-green-500 hover:text-green-500 delay-100'>Previous</button>
+                        <button onClick={onNext} class='mx-4 p-3 bg-green-400 rounded-lg border hover:bg-white hover:border-green-500 hover:text-green-500 delay-100'>Next</button>
+                        <button onClick={submit} class='mx-4 p-3 bg-green-400 rounded-lg border hover:bg-white hover:border-green-500 hover:text-green-500 delay-100'>Submit</button>
                     </div>
                 </div>
             </div>

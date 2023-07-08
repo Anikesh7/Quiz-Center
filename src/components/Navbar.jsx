@@ -7,7 +7,7 @@ function Navbar() {
         <>
             <nav class="flex items-center bg-gray-800 p-3 px-20 flex-wrap">
                 <p class="p-2 mr-4 inline-flex items-center">
-                <img className='h-8 mr-2' src={logo} alt="logo" />
+                <img class='h-8 mr-2' src={logo} alt="logo" />
                     <span class="text-xl text-white font-bold uppercase tracking-wide"
                     >Quiz Center</span
                     >
